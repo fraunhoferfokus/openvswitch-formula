@@ -14,6 +14,9 @@ import salt.utils
 import salt.utils.templates
 from salt.exceptions import CommandExecutionError
 
+def __virtual__():
+    return 'ovs_bridge.exists' in __salt__
+
 def managed(name,create=True,ports=[],clean=False):
     '''
     Ensure a OpenVSwitch based bridge existe and optionally has
