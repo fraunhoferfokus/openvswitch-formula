@@ -33,12 +33,13 @@ def run():
                 ],
         }
     }
-    # currently this module won't build on Ubuntu 14.04:
+    # On Ubuntu this module is only needed on 
+    # releases previous to trusty/14.04:
     if salt['grains.get']('os') == 'Ubuntu' and \
-        salt['grains.get']('osrelease') < 14.04:
+            salt['grains.get']('osrelease') < 14.04:
         state['openvswitch']['kmod.present'] = [
             {'persist': True},
-            {'requite': 
+            {'require': 
                 [
                     {'pkg': 'openvswitch-datapath-dkms'},
                 ]
@@ -57,7 +58,7 @@ def run():
                ]
         }
         if config.has_key('clean') and config.clean:
-            state[br_state]['ovs_bridge'].append({'clean': True})
+            state[br_state]['ovs_bridge.managed'].append({'clean': True})
         
         if br_pillar[bridge].has_key('ports'):
             state[br_state]['ovs_bridge.managed'].append(
@@ -120,4 +121,3 @@ def run():
                                     ]
                             }
     return state
-        
