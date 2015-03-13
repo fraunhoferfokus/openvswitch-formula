@@ -163,7 +163,7 @@ def run():
                 {'source': 'salt://networking/network_interfaces.jinja'},
                 {'template': 'jinja'},
                 {'defaults': {
-                    'subnets': salt['pillar.get']('subnets'),
+                    #'subnets': salt['pillar.get']('subnets'),
                     'interfaces': interfaces,
                         }
                     },

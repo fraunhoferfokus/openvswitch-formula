@@ -21,7 +21,8 @@ auto {{ dev }}
   {%- if dev.startswith('vlan') -%}
     {%- set vlan = dev[4:] -%}
     {%- set raw_dev = settings.raw_dev -%}
-  {%- elif dev.split('.')|count == 2 and dev.split('.')[1].isalnum() -%}
+  {%- elif dev.split('.')|count == 2 and 
+        dev.split('.')[1].isalnum() -%}
     {%- set raw_dev = dev.split('.')[0] -%}
     {%- set vlan = dev.split('.')[1] -%}
   {%- else -%}
@@ -32,27 +33,28 @@ iface {{ dev }} inet static
     {% if vlan -%}
     vlan-raw-device {{ raw_dev }}
     {% endif -%}
-    {% set subnet = subnets[settings['network']] -%}
     address   {{ settings['v4addr'].split('/')[0] }}
     network   {{ settings['network'].split('/')[0] }}
     netmask   {{ settings['netmask'] }}
-    {% if settings.has_key('primary') and subnet.has_key('gateway') -%}
-	gateway   {{ subnet['gateway'] }}
+    {% if settings.has_key('default_gw') -%}
+    gateway   {{ settings['default_gw'] }}
     {% endif -%}
-	broadcast {{ settings['broadcast'] }}
+    broadcast {{ settings['broadcast'] }}
   {%- endif %}
   {% if settings.has_key('v6addr') %}
 iface {{ dev }} inet6 static
-  {%- set addr = salt['netaddr_mod.ip'](settings['v6addr']).values()[0] %}
-  {%- set subnet = salt['pillar.get']('subnets:' + addr['cidr']|replace(":","_")) %}
-    address   {{ addr['ip'] }}
-    netmask   {{ addr['prefixlen'] }}
-    {%- if subnet.has_key('privext') %}
-    privext   {{ subnet['privext'] }}
+  {%- set addr, prefix = settings['v6addr'].split('/') %}
+    address   {{ addr }}
+    netmask   {{ prefix }}
+    {%- if settings.has_key('privext') %}
+    privext   {{ settings['privext'] }}
     {%- endif %}
     {%- if subnet.has_key('scope') %}
-    scope     {{ subnet['scope'] }}
-    {%- else %} # is scope necessary for inet6? {% endif %} {% endif %}
+    scope     {{ settings['scope'] }}
+    {%- else %} 
+    # is scope necessary for inet6?
+    {% endif %} 
+  {% endif %}
   {%- if settings.has_key('uplink') %}
 # uplink for {{ dev }}
 auto {{ settings.uplink }}
