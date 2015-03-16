@@ -160,7 +160,7 @@ def run():
     # And now pass all this data to the template:              
     state['/etc/network/interfaces'] = {
             'file.managed': [
-                {'source': 'salt://networking/network_interfaces.jinja'},
+                {'source': 'salt://networking/files/interfaces'},
                 {'template': 'jinja'},
                 {'defaults': {
                     #'subnets': salt['pillar.get']('subnets'),

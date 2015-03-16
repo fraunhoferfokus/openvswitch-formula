@@ -43,7 +43,7 @@ resolvconf:
 {% elif grains.os != 'Linux' or ( grains.os == 'Linux' and not salt['pkg.version']('resolvconf') ) %}
 /etc/resolv.conf:
   file.managed:
-    - source: salt://networking/resolv.conf
+    - source: salt://networking/files/resolv.conf
     - user: root
     - mode: 0444
     - template: jinja
