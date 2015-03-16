@@ -28,12 +28,12 @@ auto {{ dev }}
   {%- else -%}
     {%- set vlan = False -%}
   {%- endif -%}
-  {%- if settings.has_key('v4addr') %}
+  {%- if settings.has_key('ipv4') %}
 iface {{ dev }} inet static
     {% if vlan -%}
     vlan-raw-device {{ raw_dev }}
     {% endif -%}
-    address   {{ settings['v4addr'].split('/')[0] }}
+    address   {{ settings['ipv4'].split('/')[0] }}
     network   {{ settings['network'].split('/')[0] }}
     netmask   {{ settings['netmask'] }}
     {% if settings.has_key('default_gw') -%}
