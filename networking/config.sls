@@ -98,8 +98,6 @@ def run():
                     interfaces[iface] = cidr2network_options(settings['ipv4'])
                 if settings.has_key('comment'):
                     interfaces[iface]['comment'] = settings['comment']
-                if settings.has_key('primary'):
-                    interfaces[iface]['primary'] = settings['primary']
             state['no module ovs_bridge'] = { 
                     'cmd.run': [
                         {'name': 
@@ -113,8 +111,6 @@ def run():
                     interfaces[iface] = cidr2network_options(settings['ipv4'])
                 if settings.has_key('comment'):
                     interfaces[iface]['comment'] = settings['comment']
-                if settings.has_key('primary'):
-                    interfaces[iface]['primary'] = settings['primary']
         else:
             interfaces = {}
             br_pillar = salt['pillar.get']('openvswitch:bridges', {})
@@ -128,8 +124,6 @@ def run():
                     if iface_config.has_key('ipv4'):
                         cidr = iface_config['ipv4']
                         interfaces[bridge] = cidr2network_options(cidr)
-                    if iface_config.has_key('primary'):
-                        interfaces[bridge]['primary'] = iface_config['primary']
                     if br_config.has_key('comment'):
                         interfaces[bridge]['comment'] = br_config['comment']
                     interfaces[bridge]['uplink'] = br_config['reuse_netcfg']
@@ -159,8 +153,6 @@ def run():
                         interfaces[iface] = cidr2network_options(cidr)
                     if settings.has_key('comment'):
                         interfaces[iface]['comment'] = settings['comment']
-                    if settings.has_key('primary'):
-                        interfaces[iface]['primary'] = settings['primary']
     # And now pass all this data to the template:              
     state['/etc/network/interfaces'] = {
             'file.managed': [
