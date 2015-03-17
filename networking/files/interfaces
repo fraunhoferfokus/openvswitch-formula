@@ -29,21 +29,25 @@ auto {{ dev }}
     {%- set vlan = False -%}
   {%- endif -%}
   {%- if settings.has_key('ipv4') %}
+    {%- if settings['ipv4'] == 'dhcp' %}
+iface {{ dev }} inet dhcp
+    {%- else %}
 iface {{ dev }} inet static
-    {% if vlan -%}
+      {%- if vlan %}
     vlan-raw-device {{ raw_dev }}
-    {% endif -%}
+      {%- endif %}
     address   {{ settings['ipv4'].split('/')[0] }}
     network   {{ settings['network'].split('/')[0] }}
     netmask   {{ settings['netmask'] }}
-    {% if settings.has_key('default_gw') -%}
+      {%- if settings.has_key('default_gw') %}
     gateway   {{ settings['default_gw'] }}
-    {% endif -%}
+      {%- endif %}
     broadcast {{ settings['broadcast'] }}
+    {%- endif %}
   {%- endif %}
-  {% if settings.has_key('v6addr') %}
+  {% if settings.has_key('ipv6') %}
 iface {{ dev }} inet6 static
-  {%- set addr, prefix = settings['v6addr'].split('/') %}
+  {%- set addr, prefix = settings['ipv6'].split('/') %}
     address   {{ addr }}
     netmask   {{ prefix }}
     {%- if settings.has_key('privext') %}

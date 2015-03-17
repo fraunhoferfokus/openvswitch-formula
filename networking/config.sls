@@ -62,8 +62,12 @@ def cidr2network_options(cidr):
     derivated from given IPv4 address in CIDR format.
     """
     options = {}
-    netmask = prefixlen2netmask(cidr.split('/')[1])
-    options['v4addr'] = cidr
+    try:
+        netmask = prefixlen2netmask(cidr.split('/')[1])
+    except IndexError:
+        raise ValueError, "IPv4 address needs to be in" \
+            + " CIDR format, i.e. 192.0.2.17/24"
+    options['ipv4'] = cidr
     options['netmask'] = netmask
     options['network'] = "{0}/{1}".format(
         int2quaddot(
@@ -90,8 +94,8 @@ def run():
             # Module ovs_bridge not available on this minion
             interfaces = {}
             for iface, settings in salt['pillar.get']('interfaces', {}).items():
-                if settings.has_key('v4addr') and settings['v4addr'] != 'dhcp':
-                    interfaces[iface] = cidr2network_options(settings['v4addr'])
+                if settings.has_key('ipv4') and settings['ipv4'] != 'dhcp':
+                    interfaces[iface] = cidr2network_options(settings['ipv4'])
                 if settings.has_key('comment'):
                     interfaces[iface]['comment'] = settings['comment']
                 if settings.has_key('primary'):
@@ -105,8 +109,8 @@ def run():
         elif not salt['pillar.get']('openvswitch:bridges', False):
             interfaces = {}
             for iface, settings in salt['pillar.get']('interfaces', {}).items():
-                if settings.has_key('v4addr') and settings['v4addr'] != 'dhcp':
-                    interfaces[iface] = cidr2network_options(settings['v4addr'])
+                if settings.has_key('ipv4') and settings['ipv4'] != 'dhcp':
+                    interfaces[iface] = cidr2network_options(settings['ipv4'])
                 if settings.has_key('comment'):
                     interfaces[iface]['comment'] = settings['comment']
                 if settings.has_key('primary'):
@@ -121,8 +125,8 @@ def run():
                     # TODO: Check if this interface exists!
                     iface_config = salt['pillar.get'](
                         'interfaces:{0}'.format(br_config['reuse_netcfg']))
-                    if iface_config.has_key('v4addr'):
-                        cidr = iface_config['v4addr']
+                    if iface_config.has_key('ipv4'):
+                        cidr = iface_config['ipv4']
                         interfaces[bridge] = cidr2network_options(cidr)
                     if iface_config.has_key('primary'):
                         interfaces[bridge]['primary'] = iface_config['primary']
@@ -133,9 +137,9 @@ def run():
                         interfaces[bridge]['uplink_comment'] = \
                             iface_config['comment']
             #  # TODO: IPv6 config
-            #   if settings.has_key('v6addr'):
-            #     interfaces[bridge]['v6addr'] = salt['pillar.get'](
-            #         'interfaces:{0}:v6addr'.format(iface))
+            #   if settings.has_key('ipv6'):
+            #     interfaces[bridge]['ipv6'] = salt['pillar.get'](
+            #         'interfaces:{0}:ipv6'.format(iface))
             # get a list of all interfaces used as uplinks...:
             uplinks = []
             for br_conf in interfaces.values():
@@ -149,9 +153,9 @@ def run():
                     # TODO: Get this comment back in there:
                     #interfaces[iface]['comment'] = \
                     #      "Bridge {0} doesn't exist yet".format(bridge)
-                    if settings.has_key('v4addr'):
+                    if settings.has_key('ipv4') and settings['ipv4'] != 'dhcp':
                         cidr = salt['pillar.get'](
-                            'interfaces:{0}:v4addr'.format(iface))
+                            'interfaces:{0}:ipv4'.format(iface))
                         interfaces[iface] = cidr2network_options(cidr)
                     if settings.has_key('comment'):
                         interfaces[iface]['comment'] = settings['comment']
