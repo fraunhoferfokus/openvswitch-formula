@@ -208,9 +208,15 @@ def run():
             interfaces = {}
             br_pillar = salt['pillar.get']('openvswitch:bridges', {})
             for bridge, br_config in br_pillar.items():
+                if br_config.has_key('reuse_netcfg') and \
+                        br_config['reuse_netcfg'] not in \
+                        salt['network.interfaces']().keys():
+                    raise SaltInvocationError, \
+                        "Iface {0} ".format(br_config['reuse_netcfg']) + \
+                        "set in bridge {0}'s option ".format(bridge) + \
+                        "'reuse_netcfg' doesn't exist."
                 if salt['ovs_bridge.exists'](bridge) and \
                         br_config.has_key('reuse_netcfg'):
-                    # TODO: Check if this interface exists first!
                     if br_config['reuse_netcfg'] not in ifs_w_gw.keys() \
                             and br_config['reuse_netcfg'] not in ifs_dhcp:
                         interfaces[bridge] = iface_settings(
