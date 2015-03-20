@@ -161,6 +161,7 @@ def run():
             raise SaltInvocationError, "More than one interface to " + \
                 "configure for default gateways: {0}".format(ifs_w_gw)
 
+        # Check if default_gw is set on a DHCP-Interface:
         for iface in pillar_interfaces.keys():
             if iface in ifs_w_gw and iface in ifs_dhcp:
                 raise SaltInvocationError, "Can't both set the gateway "\
@@ -170,15 +171,19 @@ def run():
                 raise NotImplementedError, "Keeping the DHCP-client " + \
                     "from settings the default gateway is not implemented" 
 
+        # Make sure we don't try to set the gw on any other 
+        # device when one will be configured via DHCP:
         if len(ifs_dhcp) == 1:
             ifs_not_gw += [ iface for iface in pillar_interfaces.keys() \
                     if iface != ifs_dhcp[0] ]
 
+        # If there's no DHCP-iface and none has set a gw check if 
+        # there's one that doesn't have default_gw set to False:
         if not ifs_dhcp and not ifs_w_gw.keys():
             leftovers = [ iface for iface in pillar_interfaces.keys() \
                     if iface not in ifs_not_gw ]
             if len(leftovers) != 1:
-                raise SaltInvocationError, "No interface chosen to" + \
+                raise SaltInvocationError, "No interface chosen to " + \
                     "set the default route on."
             else:
                 ifs_w_gw[leftovers[0]] = True
@@ -189,24 +194,13 @@ def run():
         #    "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
         #    "\n\nAll Interfaces: " + str(pillar_interfaces)
 
-        if not 'ovs_bridge.exists' in salt:
-            # Module ovs_bridge not available on this minion
+        # Missing ovs_bridge module or Pillar-data for OVS-bridge
+        # Configuration on this minion
+        if not 'ovs_bridge.exists' in salt or \
+                not salt['pillar.get']('openvswitch:bridges', False):
             interfaces = {}
             for iface in salt['pillar.get']('interfaces', {}).keys():
                 if iface not in ifs_w_gw.keys() and iface not in ifs_dhcp:
-                    interfaces[iface] = iface_settings(iface, set_gw = False)
-                else:
-                    interfaces[iface] = iface_settings(iface)
-            state['no module ovs_bridge'] = { 
-                    'cmd.run': [
-                        {'name': 
-                            'echo function ovs_bridge.exists missing' },
-                        ]
-                    }
-        elif not salt['pillar.get']('openvswitch:bridges', False):
-            interfaces = {}
-            for iface in salt['pillar.get']('interfaces', {}).keys():
-                if iface not in ifs_w_gw.keys and iface not in ifs_dhcp:
                     interfaces[iface] = iface_settings(iface, set_gw = False)
                 else:
                     interfaces[iface] = iface_settings(iface)
