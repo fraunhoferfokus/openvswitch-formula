@@ -13,9 +13,11 @@
 auto lo
 iface lo inet loopback
 
-{% for dev, settings in interfaces.items() -%}
+{%- for dev, settings in interfaces.items() -%}
   {% if settings.has_key('comment') -%}
-# {{ settings['comment'] }}
+     {%- for line in settings['comment'].splitlines() %}
+# {{ line }}
+     {%- endfor %}
   {%- endif %}
 auto {{ dev }}
   {%- if dev.startswith('vlan') -%}
