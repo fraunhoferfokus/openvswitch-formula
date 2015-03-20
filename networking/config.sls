@@ -146,8 +146,14 @@ def run():
             if settings.has_key('default_gw'):
                 if settings['default_gw']:
                     ifs_w_gw[iface] = settings['default_gw']
+                # Would cause a SaltInvocationError later:
+                #elif iface in ifs_dhcp:
+                #    pass
                 else:
                     ifs_not_gw += [iface]
+            # Only interfaces w/ default_gw = False should
+            # get into this list at this point:
+            #else: ifs_not_gw += [iface]
 
         # Works:
         if len(ifs_dhcp) > 1:
@@ -156,7 +162,7 @@ def run():
             raise SaltInvocationError, "More than one interface to " + \
                 "configure for DHCP: {0}".format(ifs_dhcp)
          
-        # Doesn't work??
+        # Works:
         if len(ifs_w_gw.keys()) > 1:
             raise SaltInvocationError, "More than one interface to " + \
                 "configure for default gateways: {0}".format(ifs_w_gw)
@@ -174,28 +180,35 @@ def run():
         # Make sure we don't try to set the gw on any other 
         # device when one will be configured via DHCP:
         if len(ifs_dhcp) == 1:
-            ifs_not_gw += [ iface for iface in pillar_interfaces.keys() \
-                    if iface != ifs_dhcp[0] ]
+            for iface in pillar_interfaces.keys():
+                if iface != ifs_dhcp[0]:
+                    ifs_not_gw.append(iface)
+            #raise Exception, "One DHCP-interface found: " + ifs_dhcp[0] + \
+            #    "\nThe following interfaces are listed in ifs_not_gw: " + \
+            #    "\n" + str(ifs_not_gw)
 
         # If there's no DHCP-iface and none has set a gw check if 
         # there's one that doesn't have default_gw set to False:
         if not ifs_dhcp and not ifs_w_gw.keys():
-            leftovers = [ iface for iface in pillar_interfaces.keys() \
-                    if iface not in ifs_not_gw ]
+            leftovers = []
+            for iface in pillar_interfaces.keys():
+                if iface not in ifs_not_gw:
+                    leftovers.append(iface)
             if len(leftovers) != 1:
                 raise SaltInvocationError, "No interface chosen to " + \
                     "set the default route on."
             else:
                 ifs_w_gw[leftovers[0]] = True
 
-        #raise Exception, \
-        #    "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
-        #    "\nDHCP Interfaces:" + str(ifs_dhcp) +\
-        #    "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
-        #    "\n\nAll Interfaces: " + str(pillar_interfaces)
+        ##### PROBLEM IS ABOVE THIS LINE #####
+        raise Exception, \
+            "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
+            "\nDHCP Interfaces:" + str(ifs_dhcp) +\
+            "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
+            "\n\nAll Interfaces: " + str(pillar_interfaces)
 
         # Missing ovs_bridge module or Pillar-data for OVS-bridge
-        # Configuration on this minion
+        # Configuration on this minion:
         if not 'ovs_bridge.exists' in salt or \
                 not salt['pillar.get']('openvswitch:bridges', False):
             interfaces = {}
@@ -208,22 +221,25 @@ def run():
             interfaces = {}
             br_pillar = salt['pillar.get']('openvswitch:bridges', {})
             for bridge, br_config in br_pillar.items():
-                if br_config.has_key('reuse_netcfg') and \
-                        br_config['reuse_netcfg'] not in \
-                        salt['network.interfaces']().keys():
+                if not br_config.has_key('reuse_netcfg'):
+                    continue
+                uplink = br_config['reuse_netcfg']
+                if uplink not in salt['network.interfaces']().keys():
                     raise SaltInvocationError, \
-                        "Iface {0} ".format(br_config['reuse_netcfg']) + \
-                        "set in bridge {0}'s option ".format(bridge) + \
-                        "'reuse_netcfg' doesn't exist."
-                if salt['ovs_bridge.exists'](bridge) and \
-                        br_config.has_key('reuse_netcfg'):
-                    if br_config['reuse_netcfg'] not in ifs_w_gw.keys() \
-                            and br_config['reuse_netcfg'] not in ifs_dhcp:
+                        """
+                        Iface {0} set in bridge {1}'s option 
+                        'reuse_netcfg' doesn't exist.
+                        All interfaces:\n{2}
+                        """.format(uplink, bridge, 
+                            salt['network.interfaces']().keys())
+                if salt['ovs_bridge.exists'](bridge):
+                    if uplink not in ifs_w_gw.keys() \
+                            and uplink not in ifs_dhcp:
                         interfaces[bridge] = iface_settings(
-                            br_config['reuse_netcfg'], set_gw = False)
+                            uplink, set_gw = False)
                     else:
                         interfaces[bridge] = iface_settings(
-                            br_config['reuse_netcfg'])
+                            uplink)
                     if interfaces[bridge].has_key('comment'):
                         interfaces[bridge]['uplink_comment'] = \
                             interfaces[bridge]['comment']
@@ -235,8 +251,7 @@ def run():
                             interfaces[bridge].pop('comment')
                         except KeyError:
                             pass
-                    interfaces[bridge]['uplink'] = \
-                        br_config['reuse_netcfg']
+                    interfaces[bridge]['uplink'] = uplink
             #raise Exception, \
             #    "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
             #    "\nDHCP Interfaces:" + str(ifs_dhcp) +\
@@ -247,15 +262,15 @@ def run():
             #     interfaces[bridge]['ipv6'] = salt['pillar.get'](
             #         'interfaces:{0}:ipv6'.format(iface))
             # get a list of all interfaces used as uplinks...:
-            uplinks = []
+            uplink_list = []
             for br_conf in interfaces.values():
                 if br_conf.has_key('uplink'):
-                    uplinks += [ br_conf['uplink'] ]
+                    uplink_list += [ br_conf['uplink'] ]
             # ...and interfaces not in this list will be passed
             # to the template for /etc/network/interfaces:
             for iface, settings in salt['pillar.get'](
                     'interfaces', {}).items():
-                if iface not in uplinks:
+                if iface not in uplink_list:
                     if iface not in ifs_w_gw.keys() and iface not in ifs_dhcp:
                         interfaces[iface] = iface_settings(iface, set_gw=False)
                     else:
