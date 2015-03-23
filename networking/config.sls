@@ -94,9 +94,9 @@ def iface_settings(iface, set_gw = True):
             if set_gw:
                 # if no 'default_gw' or default_gw is a True bool:
                 if not iface_pillar.has_key('default_gw') or (\
-                        isinstance(bool, type(iface_pillar['default_gw'])) \
+                        isinstance(iface_pillar['default_gw'], bool) \
                         and iface_pillar['default_gw']
-                        ):
+                    ):
                     # default to 1st IP of network as GW
                     subnet = settings['network'].split('/')[0]
                     subnet_int = quaddot2int(subnet)
@@ -111,6 +111,11 @@ def iface_settings(iface, set_gw = True):
                     pass
                 # if 'default_gw' is not a bool use its value:
                 else:
+                    if not isinstance(iface_pillar['default_gw'], bool):
+                        try:
+                            quaddot2int(iface_pillar['default_gw'])
+                        except ValueError:
+                            raise SaltInvocationError, "need QuadDot or Bool"
                     settings['default_gw'] = iface_pillar['default_gw']
                     
     if iface_pillar.has_key('comment'):
