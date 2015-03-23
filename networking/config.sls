@@ -4,6 +4,12 @@ State gathering data from pillar[interfaces] and pillar[openvswitch]
 to check which bridges already exist before passing network 
 configuration data to the template for /etc/network/interfaces.
 """
+# This one is handy to keep around for printf-debugging:
+#raise Exception, \
+#    "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
+#    "\nDHCP Interfaces:" + str(ifs_dhcp) +\
+#    "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
+#    "\n\nAll Interfaces: " + str(interfaces.items())
 
 from salt.exceptions import SaltInvocationError
 
@@ -192,6 +198,10 @@ def run():
             #    "\nThe following interfaces are listed in ifs_not_gw: " + \
             #    "\n" + str(ifs_not_gw)
 
+        if len(ifs_dhcp) and len(ifs_w_gw.keys()):
+            raise SaltInvocationError, "Can't use DHCP on one iface " + \
+                "and set a default gateway on another iface."
+
         # If there's no DHCP-iface and none has set a gw check if 
         # there's one that doesn't have default_gw set to False:
         if not ifs_dhcp and not ifs_w_gw.keys():
@@ -250,11 +260,6 @@ def run():
                         except KeyError:
                             pass
                     interfaces[bridge]['uplink'] = uplink
-            #raise Exception, \
-            #    "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
-            #    "\nDHCP Interfaces:" + str(ifs_dhcp) +\
-            #    "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
-            #    "\n\nAll Interfaces: " + str(interfaces.values())
             #  # TODO: IPv6 config
             #   if settings.has_key('ipv6'):
             #     interfaces[bridge]['ipv6'] = salt['pillar.get'](
