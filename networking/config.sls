@@ -123,6 +123,17 @@ def iface_settings(iface, set_gw = True):
                         except ValueError:
                             raise SaltInvocationError, "need QuadDot or Bool"
                     settings['default_gw'] = iface_pillar['default_gw']
+            if settings.has_key('default_gw'):
+                gateway_int = quaddot2int(settings['default_gw'])
+                subnet_int = quaddot2int(settings['network'].split('/')[0])
+                brdcast_int = quaddot2int(settings['broadcast'])
+                if gateway_int < subnet_int or gateway_int > brdcast_int:
+                    raise SaltInvocationError, ("Default gateway {0} " + \
+                        "is not in subnet {1} as configured on " + \
+                        "interface {2}.").format( 
+                            str(settings['default_gw']), 
+                            str(settings['network']), 
+                            iface)
                     
     if iface_pillar.has_key('comment'):
         settings['comment'] = iface_pillar['comment']
