@@ -91,28 +91,28 @@ def iface_settings(iface, set_gw = True):
             settings['ipv4'] = 'dhcp'
         else:
             settings = cidr2network_options(iface_pillar['ipv4'])
-            
-            # if no 'default_gw' or default_gw is a True bool:
-            if not iface_pillar.has_key('default_gw') or (\
-                    isinstance(bool, type(iface_pillar['default_gw'])) \
-                    and iface_pillar['default_gw']
-                    ):
-                # default to 1st IP of network as GW
-                subnet = settings['network'].split('/')[0]
-                subnet_int = quaddot2int(subnet)
-                gateway = int2quaddot(subnet_int + 1)
-                if gateway == iface_pillar['ipv4']:
-                    raise ValueError, "Can't set the default route " + \
-                        "to the same IP as configured on this interface"
-                settings['default_gw'] = gateway
-            # if 'default_gw' is False bool:
-            elif iface_pillar.has_key('default_gw') and \
-                    not iface_pillar['default_gw']:
-                pass
-            # if 'default_gw' is not a bool use its value:
-            else:
-                settings['default_gw'] = iface_pillar['default_gw']
-                
+            if set_gw:
+                # if no 'default_gw' or default_gw is a True bool:
+                if not iface_pillar.has_key('default_gw') or (\
+                        isinstance(bool, type(iface_pillar['default_gw'])) \
+                        and iface_pillar['default_gw']
+                        ):
+                    # default to 1st IP of network as GW
+                    subnet = settings['network'].split('/')[0]
+                    subnet_int = quaddot2int(subnet)
+                    gateway = int2quaddot(subnet_int + 1)
+                    if gateway == iface_pillar['ipv4']:
+                        raise ValueError, "Can't set the default route " + \
+                            "to the same IP as configured on this interface"
+                    settings['default_gw'] = gateway
+                # if 'default_gw' is False bool:
+                elif iface_pillar.has_key('default_gw') and \
+                        not iface_pillar['default_gw']:
+                    pass
+                # if 'default_gw' is not a bool use its value:
+                else:
+                    settings['default_gw'] = iface_pillar['default_gw']
+                    
     if iface_pillar.has_key('comment'):
         settings['comment'] = iface_pillar['comment']
 
@@ -199,13 +199,6 @@ def run():
                     "set the default route on."
             else:
                 ifs_w_gw[leftovers[0]] = True
-
-        ##### PROBLEM IS ABOVE THIS LINE #####
-        raise Exception, \
-            "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
-            "\nDHCP Interfaces:" + str(ifs_dhcp) +\
-            "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
-            "\n\nAll Interfaces: " + str(pillar_interfaces)
 
         # Missing ovs_bridge module or Pillar-data for OVS-bridge
         # Configuration on this minion:
