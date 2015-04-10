@@ -1,6 +1,7 @@
 include:
   - networking.config
   - networking.resolvconf
+  - networking.hostsfile
 
 {% if salt['grains.get']('os_family') != 'Debian' %}
 networking service:
