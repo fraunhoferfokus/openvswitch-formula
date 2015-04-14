@@ -55,10 +55,8 @@ iface {{ dev }} inet6 static
     {%- if settings.has_key('privext') %}
     privext   {{ settings['privext'] }}
     {%- endif %}
-    {%- if subnet.has_key('scope') %}
+    {%- if settings.has_key('scope') %}
     scope     {{ settings['scope'] }}
-    {%- else %} 
-    # is scope necessary for inet6?
     {% endif %} 
   {% endif %}
   {%- if settings.has_key('uplink') %}

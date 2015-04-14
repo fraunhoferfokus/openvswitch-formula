@@ -134,6 +134,13 @@ def iface_settings(iface, set_gw = True):
                             str(settings['default_gw']), 
                             str(settings['network']), 
                             iface)
+
+    if iface_pillar.has_key('ipv6'):
+        settings['ipv6'] = iface_pillar['ipv6']
+        if iface_pillar.has_key('privext'):
+            settings['privext'] = iface_pillar['privext']
+        if iface_pillar.has_key('scope'):
+            settings['scope'] = iface_pillar['scope']
                     
     if iface_pillar.has_key('comment'):
         settings['comment'] = iface_pillar['comment']
