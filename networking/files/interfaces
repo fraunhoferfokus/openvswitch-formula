@@ -45,6 +45,21 @@ iface {{ dev }} inet static
     gateway   {{ settings['default_gw'] }}
       {%- endif %}
     broadcast {{ settings['broadcast'] }}
+      {%- for cmd_type in ['pre-up', 'up', 'post-up', 
+                'down', 'pre-down', 'post-down'] %}
+        {%- if settings.has_key(cmd_type) %}
+          {%- if settings[cmd_type] is string %}
+    {{ cmd_type }} {{ settings[cmd_type] }}
+          {%- elif settings[cmd_type] is iterable %}
+            {%- for cmd in settings[cmd_type] %}
+    {{ cmd_type }} {{ cmd }}
+            {%- endfor %}
+          {%- else %}
+    # {{ cmd_type }} command "{{ cmd }}" for 
+    # {{ dev }} has an invalid type
+          {%- endif %}
+        {%- endif %}
+      {%- endfor %}
     {%- endif %}
   {%- endif %}
   {% if settings.has_key('ipv6') %}

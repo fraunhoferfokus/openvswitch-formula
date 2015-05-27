@@ -134,6 +134,10 @@ def iface_settings(iface, set_gw = True):
                             str(settings['default_gw']), 
                             str(settings['network']), 
                             iface)
+    for cmd_type in ['pre-up', 'up', 'post-up',
+                'down', 'pre-down', 'post-down']:
+        if iface_pillar.has_key(cmd_type):
+            settings[cmd_type] = iface_pillar[cmd_type]
 
     if iface_pillar.has_key('ipv6'):
         settings['ipv6'] = iface_pillar['ipv6']
