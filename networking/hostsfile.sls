@@ -15,32 +15,39 @@
             there's more than one iface with default_gw #}
     {% endfor %}
 {% endif %}
-{% set ips = {} %}
-{% if settings.has_key('ipv4') %}
+{% if settings.has_key('ipv4') and settings['ipv4'] != 'dhcp' %}
     {% set ipv4 = settings['ipv4'].split('/')[0] %}
 {% endif %}
 {% if settings.has_key('ipv6') %}
     {% set ipv6 = settings['ipv6'].split('/')[0] %}
 {% endif %}
 
+{% if ipv4 is defined or ipv6 is defined %}
 {{ fqdn }} in /etc/hosts:
     host.present:
         - ip: 
-{% if ipv4 is defined %}
+    {% if ipv4 is defined and ipv4 is not none and ipv4 != 'dhcp'%}
             - {{ ipv4 }}
-{% endif %}
-{% if ipv6 is defined %}
+    {% endif %}
+    {% if ipv6 is defined %}
             - {{ ipv6 }}
-{% endif %}
+    {% endif %}
         - names:
             - {{ fqdn }}
             - {{ grains['nodename'] }}
+{% endif %}
 
 {% if grains['os'] == 'Ubuntu' %}
-no 127.0.1.1 in /etc/hosts:
+127.0.1.1 in /etc/hosts:
+  {% if settings.has_key('ipv4') and settings['ipv4'] != 'dhcp' %}
     host.absent:
         - name: {{ grains['nodename'] }}
         - ip: 127.0.1.1
+  {% elif settings.has_key('ipv4') and settings['ipv4'] == 'dhcp' %}
+    host.present:
+        - name: {{ grains['nodename'] }}
+        - ip: 127.0.1.1
+  {% endif %}
 {% endif %}
 
 {% for id, details in salt['pillar.get']('hosts', {}).items() %}
