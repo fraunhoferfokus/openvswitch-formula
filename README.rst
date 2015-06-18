@@ -13,6 +13,8 @@ A saltstack formula for deploying OpenVSwitch_.
 
 TODO
 ====
+
+ - **UPDATE README**
    
  - add documentation for ``_modules/ovs_bridge``, ``_states/ovs_bridge``
    below
