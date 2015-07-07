@@ -38,7 +38,7 @@ resolvconf:
      couldn't figure out how to invoke it corretly #}
 /etc/resolv.conf:
   cmd.wait:
-    - name: cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | tee /etc/resolv.conf
+    - name: cp /etc/resolv.conf /tmp/resolv.conf_old; cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | tee /etc/resolv.conf | (diff /tmp/resolv.conf_old - || true)
     - watch:
       - file: /etc/resolvconf/resolv.conf.d/head
       - file: /etc/resolvconf/resolv.conf.d/base
