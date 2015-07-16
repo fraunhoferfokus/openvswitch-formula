@@ -19,7 +19,7 @@ networking service:
   {% if iface in salt['grains.get']('hwaddr_interfaces').keys() %}
 ifdown/ifup {{ iface }}:
   cmd.run:
-    - name: "ifup {{ iface }} || (ifdown {{ iface }}; ifup {{ iface }})"
+    - name: "ifdown {{ iface }}; ifup {{ iface }}"
     {% if salt['grains.get']('os_family') != 'Debian' %}
     - onfail:
       - service: networking
