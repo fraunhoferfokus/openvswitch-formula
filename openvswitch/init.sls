@@ -73,11 +73,11 @@ def run():
             #- require:
             #   - network: uplink_iface 
             #   - module: ovs_bridge
-            if netcfg.has_key('v4addr'):
+            if netcfg.has_key('ipv4'):
                 state[br_state]['cmd.run'] = [
                     {'name': ('ip addr show {1} | grep {0} || ' +\
                              'ip addr add {0} dev {1}').format(
-                                netcfg['v4addr'], bridge)},
+                                netcfg['ipv4'], bridge)},
                     {'require': [
                         {'ovs_bridge': br_state}
                         ]
@@ -101,7 +101,7 @@ def run():
                             ]
                 if interfaces.has_key(uplink_iface) and \
                     interfaces[uplink_iface].has_key('inet'):
-                    if netcfg['v4addr'].split('/')[0] == \
+                    if netcfg['ipv4'].split('/')[0] == \
                         interfaces[uplink_iface]['inet'][0]['address']:
                         state['strip netcfg from {0}'.format(uplink_iface)] = \
                             {
@@ -112,7 +112,7 @@ def run():
                                             '{0} && ip addr del {1} dev {0}'
                                                 ).format(
                                                     uplink_iface, 
-                                                    netcfg['v4addr']) 
+                                                    netcfg['ipv4']) 
                                             },
                                         {'require': [
                                             {'ovs_bridge': br_state},
