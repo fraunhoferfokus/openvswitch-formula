@@ -1,0 +1,84 @@
+###
+### ! SaltStack managed file !
+### Your changes may be reverted at any given point in time.
+### Contact your sysadmin for permanent changes.
+###
+#
+## ! OpenVSwitch-adapted network/interfaces ! 
+#
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+{%- for dev, settings in interfaces.items() -%}
+  {% if settings.has_key('comment') -%}
+     {%- for line in settings['comment'].splitlines() %}
+# {{ line }}
+     {%- endfor %}
+  {%- endif %}
+auto {{ dev }}
+  {%- if dev.startswith('vlan') -%}
+    {%- set vlan = dev[4:] -%}
+    {%- set raw_dev = settings.raw_dev -%}
+  {%- elif dev.split('.')|count == 2 and 
+        dev.split('.')[1].isalnum() -%}
+    {%- set raw_dev = dev.split('.')[0] -%}
+    {%- set vlan = dev.split('.')[1] -%}
+  {%- else -%}
+    {%- set vlan = False -%}
+  {%- endif -%}
+  {%- if settings.has_key('ipv4') %}
+    {%- if settings['ipv4'] == 'dhcp' %}
+iface {{ dev }} inet dhcp
+    {%- else %}
+iface {{ dev }} inet static
+      {%- if vlan %}
+    vlan-raw-device {{ raw_dev }}
+      {%- endif %}
+    address   {{ settings['ipv4'].split('/')[0] }}
+    network   {{ settings['network'].split('/')[0] }}
+    netmask   {{ settings['netmask'] }}
+      {%- if settings.has_key('default_gw') %}
+    gateway   {{ settings['default_gw'] }}
+      {%- endif %}
+    broadcast {{ settings['broadcast'] }}
+      {%- for cmd_type in ['pre-up', 'up', 'post-up', 
+                'down', 'pre-down', 'post-down'] %}
+        {%- if settings.has_key(cmd_type) %}
+          {%- if settings[cmd_type] is string %}
+    {{ cmd_type }} {{ settings[cmd_type] }}
+          {%- elif settings[cmd_type] is iterable %}
+            {%- for cmd in settings[cmd_type] %}
+    {{ cmd_type }} {{ cmd }}
+            {%- endfor %}
+          {%- else %}
+    # {{ cmd_type }} command "{{ cmd }}" for 
+    # {{ dev }} has an invalid type
+          {%- endif %}
+        {%- endif %}
+      {%- endfor %}
+    {%- endif %}
+  {%- endif %}
+  {% if settings.has_key('ipv6') %}
+iface {{ dev }} inet6 static
+  {%- set addr, prefix = settings['ipv6'].split('/') %}
+    address   {{ addr }}
+    netmask   {{ prefix }}
+    {%- if settings.has_key('privext') %}
+    privext   {{ settings['privext'] }}
+    {%- endif %}
+    {%- if settings.has_key('scope') %}
+    scope     {{ settings['scope'] }}
+    {% endif %} 
+  {% endif %}
+  {%- if settings.has_key('uplink') %}
+# uplink for {{ dev }}
+auto {{ settings.uplink }}
+iface {{ settings.uplink }} inet manual
+    post-up ip link set promisc on {{ settings.uplink }}
+    pre-down ip link set promisc off {{ settings.uplink }}
+  {%- endif %}
+{% endfor %}

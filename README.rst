@@ -13,11 +13,9 @@ A saltstack formula for deploying OpenVSwitch_.
 
 TODO
 ====
+
+ - **UPDATE README**
    
- - remove `network.managed` from the `openvswitch` state as it's 
-   messing with `/etc/network/interfaces`
- - get network.get_route(iface=None,dest=None) into SaltStack so 
-   we don't have to use a custom ``network``-module
  - add documentation for ``_modules/ovs_bridge``, ``_states/ovs_bridge``
    below
  - add commandline examples to inline documentation (see the official
@@ -76,8 +74,12 @@ Generates `/etc/network/interfaces` from ``pillar[interfaces]``,
 ``pillar[subnets]`` and ``pillar[openvswitch:bridges]``. If an 
 interface listed in ``pillar[interfaces]`` appears in a bridge's 
 ``reuse_netcfg`` key its configuration will be used for the bridge.
-The interface itself will only get a minimal config to be set `up` 
-and `promisc` on boot.
+The interface itself will only get a minimal config to be set 
+``up`` and ``promisc`` on boot.
+
+To set the default route you can either set the key ``default_gw``
+to an IP or just to ``True`` to use the first IP in the interface's
+subnet.
 
 I.e. this pillar-data:
 
@@ -94,11 +96,8 @@ I.e. this pillar-data:
     interfaces:
       eth0:
         comment: Uplink for ovs-br0
-        v4addr: 10.10.0.5/16
-
-    subnets: 
-      10.10.0.0/16:
-        gateway: 10.10.0.1
+        ipv4: 10.10.0.5/16
+        default_gw: True
 
 Would result in something like this in your `/etc/network/interfaces`::
 
@@ -106,7 +105,8 @@ Would result in something like this in your `/etc/network/interfaces`::
     auto ovs-br0
     iface ovs-br0 inet static
         address   10.10.0.5
-        netmask       255.255.0.0
+        netmask   255.255.0.0
+        gateway   10.10.0.1
         network   10.10.0.0
         broadcast 10.10.255.255
 

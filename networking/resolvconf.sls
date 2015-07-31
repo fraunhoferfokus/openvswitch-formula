@@ -1,6 +1,14 @@
-{% if grains['os_family'] == 'Debian' %}
-  {# Try to trigger update of /etc/resolv.conf on  #}
-  {# changes if resolvconf is currently installed: #}
+{# On system w/o the resolvconf pkg just manage 
+   /etc/resolv.conf, but on Linux assume this pkg 
+   will show up Linux sooner or later... #}
+{% if not( grains['kernel'] == 'Linux' or salt['pkg.version']('resolvconf')) %}
+/etc/resolv.conf:
+  file.managed:
+    - source: salt://networking/files/resolv.conf
+    - user: root
+    - mode: 0644
+    - template: jinja
+{% else %}
   {% if salt['pkg.version']('resolvconf') %}
 resolvconf:
   service.running:
@@ -9,21 +17,36 @@ resolvconf:
     - watch:  
       - file: /etc/resolvconf/resolv.conf.d
   {% endif %}
+
   {# Prepare the configfiles for resolvconf #}
   {# even if currently not installed: #}
- 
-/etc/resolvconf/resolv.conf.d:
+/etc/resolvconf:
   file.directory:
     - user: root
     - group: root
     - mode: 0755
 
+/etc/resolvconf/resolv.conf.d:
+  file.directory:
+    - user: root
+    - group: root
+    - mode: 0755
+    - require: 
+        - file: /etc/resolvconf
+
+  {# In theory there's a command to to this but I 
+     couldn't figure out how to invoke it corretly #}
 /etc/resolv.conf:
   cmd.wait:
-    - name: cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | tee /etc/resolv.conf
+    - name: cp /etc/resolv.conf /tmp/resolv.conf_old; cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | tee /etc/resolv.conf | (diff /tmp/resolv.conf_old - || true)
     - watch:
       - file: /etc/resolvconf/resolv.conf.d/head
       - file: /etc/resolvconf/resolv.conf.d/base
+      - file: /etc/resolvconf/resolv.conf.d/tail
+    - require:
+      - file: /etc/resolvconf/resolv.conf.d
+      - file: /etc/resolvconf/resolv.conf.d/base
+      - file: /etc/resolvconf/resolv.conf.d/head
       - file: /etc/resolvconf/resolv.conf.d/tail
 
   {% for file in ['head','base','tail'] %}
@@ -35,16 +58,9 @@ resolvconf:
     - source: salt://networking/files/resolv.conf.d_{{file}}
     - user: root
     - group: root
-    - mode: 0444
+    - mode: 0644
     - template: jinja
+    - require:
+      - file: /etc/resolvconf/resolv.conf.d
   {% endfor%}
-
-{# always true on non-Debian-derived Linux: #}
-{% elif grains.os != 'Linux' or ( grains.os == 'Linux' and not salt['pkg.version']('resolvconf') ) %}
-/etc/resolv.conf:
-  file.managed:
-    - source: salt://networking/resolv.conf
-    - user: root
-    - mode: 0444
-    - template: jinja
 {% endif %}
