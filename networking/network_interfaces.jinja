@@ -1,0 +1,63 @@
+###
+### ! SaltStack managed file !
+### Your changes may be reverted at any given point in time.
+### Contact your sysadmin for permanent changes.
+###
+#
+## ! OpenVSwitch-adapted network/interfaces ! 
+#
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+{% for dev, settings in interfaces.items() -%}
+  {% if settings.has_key('comment') -%}
+# {{ settings['comment'] }}
+  {%- endif %}
+auto {{ dev }}
+  {%- if dev.startswith('vlan') -%}
+    {%- set vlan = dev[4:] -%}
+    {%- set raw_dev = settings.raw_dev -%}
+  {%- elif dev.split('.')|count == 2 and dev.split('.')[1].isalnum() -%}
+    {%- set raw_dev = dev.split('.')[0] -%}
+    {%- set vlan = dev.split('.')[1] -%}
+  {%- else -%}
+    {%- set vlan = False -%}
+  {%- endif -%}
+  {%- if settings.has_key('v4addr') %}
+iface {{ dev }} inet static
+    {% if vlan -%}
+    vlan-raw-device {{ raw_dev }}
+    {% endif -%}
+    {% set subnet = subnets[settings['network']] -%}
+    address   {{ settings['v4addr'].split('/')[0] }}
+    network   {{ settings['network'].split('/')[0] }}
+    netmask   {{ settings['netmask'] }}
+    {% if settings.has_key('primary') and subnet.has_key('gateway') -%}
+	gateway   {{ subnet['gateway'] }}
+    {% endif -%}
+	broadcast {{ settings['broadcast'] }}
+  {%- endif %}
+  {% if settings.has_key('v6addr') %}
+iface {{ dev }} inet6 static
+  {%- set addr = salt['netaddr_mod.ip'](settings['v6addr']).values()[0] %}
+  {%- set subnet = salt['pillar.get']('subnets:' + addr['cidr']|replace(":","_")) %}
+    address   {{ addr['ip'] }}
+    netmask   {{ addr['prefixlen'] }}
+    {%- if subnet.has_key('privext') %}
+    privext   {{ subnet['privext'] }}
+    {%- endif %}
+    {%- if subnet.has_key('scope') %}
+    scope     {{ subnet['scope'] }}
+    {%- else %} # is scope necessary for inet6? {% endif %} {% endif %}
+  {%- if settings.has_key('uplink') %}
+# uplink for {{ dev }}
+auto {{ settings.uplink }}
+iface {{ settings.uplink }} inet manual
+    post-up ip link set promisc on {{ settings.uplink }}
+    pre-down ip link set promisc off {{ settings.uplink }}
+  {%- endif %}
+{% endfor %}
