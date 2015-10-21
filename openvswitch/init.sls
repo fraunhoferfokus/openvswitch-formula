@@ -54,7 +54,12 @@ def run():
         state[br_state] = { 
             'ovs_bridge.managed':
                [
-                    {'name': bridge}
+                    {'name': bridge},
+                    {'require': 
+                        [
+                            {'pkg': 'openvswitch-switch'},
+                        ]
+                    }
                ]
         }
         if config.has_key('clean') and config.clean:

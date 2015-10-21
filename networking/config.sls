@@ -95,6 +95,8 @@ def iface_settings(iface, set_gw = True):
         # configuration will be set to DHCP
         if iface_pillar['ipv4'] == 'dhcp':
             settings['ipv4'] = 'dhcp'
+        elif iface_pillar['ipv4'] == 'manual':
+            settings['ipv4'] = 'manual'
         else:
             settings = cidr2network_options(iface_pillar['ipv4'])
             if set_gw:

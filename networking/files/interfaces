@@ -33,6 +33,8 @@ auto {{ dev }}
   {%- if settings.has_key('ipv4') %}
     {%- if settings['ipv4'] == 'dhcp' %}
 iface {{ dev }} inet dhcp
+    {%- elif settings['ipv4'] == 'manual' %}
+iface {{ dev }} inet manual
     {%- else %}
 iface {{ dev }} inet static
       {%- if vlan %}
@@ -45,6 +47,8 @@ iface {{ dev }} inet static
     gateway   {{ settings['default_gw'] }}
       {%- endif %}
     broadcast {{ settings['broadcast'] }}
+    {%- endif %}
+    {%- if settings['ipv4'] != 'dhcp' %}
       {%- for cmd_type in ['pre-up', 'up', 'post-up', 
                 'down', 'pre-down', 'post-down'] %}
         {%- if settings.has_key(cmd_type) %}
