@@ -12,18 +12,20 @@ configuration data to the template for /etc/network/interfaces.
 #    "\n\nAll Interfaces: " + str(interfaces.items())
 
 from salt.exceptions import SaltInvocationError
+from salt.utils import network as netutils
 
 # Helper functions:
 def quaddot2int(quaddot):
-    """
-    Returns an integer for given quad-dotted IP
-    """
-    ip_bytes = quaddot.split('.')
-    result  = int(ip_bytes[0]) << 24
-    result += int(ip_bytes[1]) << 16
-    result += int(ip_bytes[2]) <<  8
-    result += int(ip_bytes[3])
-    return result
+    return netutils._ipv4_to_bits(quaddot)
+#    """
+#    Returns an integer for given quad-dotted IP
+#    """
+#    ip_bytes = quaddot.split('.')
+#    result  = int(ip_bytes[0]) << 24
+#    result += int(ip_bytes[1]) << 16
+#    result += int(ip_bytes[2]) <<  8
+#    result += int(ip_bytes[3])
+#    return result
 
 def int2quaddot(num):
     """
@@ -37,34 +39,39 @@ def int2quaddot(num):
     return '{0}.{1}.{2}.{3}'.format(byte_a, byte_b, byte_c, byte_d)
 
 def netmask2prefixlen(netmask):
-    '''
-    Takes a netmask like '255.255.255.0'
-    and returns a prefix length like '24'.
-    '''
-    netmask = netmask.split('.')
-    bitmask = 0
-    for idx in range(3, -1, -1):
-        bitmask += int(netmask[idx]) << (idx * 8)
-    prefixlen = format(bitmask, '0b').count('1')
-    return '{0}'.format(prefixlen)
+    return netutils.get_net_size(netmask)
+#    '''
+#    Takes a netmask like '255.255.255.0'
+#    and returns a prefix length like '24'.
+#    '''
+#    netmask = netmask.split('.')
+#    bitmask = 0
+#    for idx in range(3, -1, -1):
+#        bitmask += int(netmask[idx]) << (idx * 8)
+#    prefixlen = format(bitmask, '0b').count('1')
+#    return '{0}'.format(prefixlen)
 
+# TODO: get into salt.utils.network
 def prefixlen2netmask(prefixlen):
     """
     Returns prefix length for given IPv4 netmask
     """
     return int2quaddot( 2**32 - 2** ( 32 - int(prefixlen) ))
 
+# TODO: get into salt.utils.network
 def cidr2broadcast(cidr):
     """
     Returns the broadcast address for given CIDR-IP.
     """
     netmask = prefixlen2netmask(cidr.split('/')[1])
-    netmask_int = quaddot2int(netmask)
-    addr_int = quaddot2int(cidr.split('/')[0]) 
-    network_int = addr_int & netmask_int
+    netmask_int = int(quaddot2int(netmask))
+    #addr_int = quaddot2int(cidr.split('/')[0]) 
+    network = netutils.get_net_start(cidr.split('/')[0], netmask)
+    network_int = int(quaddot2int(network))
     broadcast_int = network_int | (netmask_int ^ 0xFFFFFFFF)
     return int2quaddot(broadcast_int)
 
+# TODO? Also into salt.utils.network?
 def cidr2network_options(cidr):
     """
     Return a dictionary with netmask, network, broadcast
@@ -78,10 +85,8 @@ def cidr2network_options(cidr):
             + " CIDR format, i.e. 192.0.2.17/24"
     options['ipv4'] = cidr
     options['netmask'] = netmask
-    options['network'] = "{0}/{1}".format(
-        int2quaddot(
-            quaddot2int(cidr.split('/')[0]) & quaddot2int(netmask)),
-        cidr.split('/')[1])
+    options['network'] = netutils.get_net_start(
+                cidr.split('/')[0],(netmask))
     options['broadcast'] = cidr2broadcast(cidr)
     return options
 
