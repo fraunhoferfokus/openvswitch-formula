@@ -8,6 +8,8 @@ def run():
     """
     Function generating the state-data for openvswitch.init
     """
+    # TODO: Oh for the love of Giudo, use functions
+    # and variables to reduce the nesting in here!
     map_yaml = \
     """
     default:
