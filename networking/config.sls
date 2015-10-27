@@ -16,16 +16,18 @@ from salt.utils import network as netutils
 
 # Helper functions:
 def quaddot2int(quaddot):
-    return netutils._ipv4_to_bits(quaddot)
-#    """
-#    Returns an integer for given quad-dotted IP
-#    """
-#    ip_bytes = quaddot.split('.')
-#    result  = int(ip_bytes[0]) << 24
-#    result += int(ip_bytes[1]) << 16
-#    result += int(ip_bytes[2]) <<  8
-#    result += int(ip_bytes[3])
-#    return result
+    # TODO: Regression in Salt!
+    #       suddenly returns a string!
+    #return netutils._ipv4_to_bits(quaddot)
+    """
+    Returns an integer for given quad-dotted IP
+    """
+    ip_bytes = quaddot.split('.')
+    result  = int(ip_bytes[0]) << 24
+    result += int(ip_bytes[1]) << 16
+    result += int(ip_bytes[2]) <<  8
+    result += int(ip_bytes[3])
+    return result
 
 def int2quaddot(num):
     """
