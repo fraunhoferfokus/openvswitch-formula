@@ -34,15 +34,13 @@ resolvconf:
     - require: 
         - file: /etc/resolvconf
 
-  {# In theory there's a command to to this but I 
-     couldn't figure out how to invoke it corretly #}
+  {# In theory there's a command to do this but I 
+     couldn't figure out how to invoke it correctly #}
 /etc/resolv.conf:
-  cmd.wait:
-    - name: cp /etc/resolv.conf /tmp/resolv.conf_old; cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | tee /etc/resolv.conf | (diff /tmp/resolv.conf_old - || true)
-    - watch:
-      - file: /etc/resolvconf/resolv.conf.d/head
-      - file: /etc/resolvconf/resolv.conf.d/base
-      - file: /etc/resolvconf/resolv.conf.d/tail
+  cmd.run:
+    - name: cp /etc/resolv.conf /tmp/resolv.conf_old; cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | tee /etc/resolv.conf | (diff -u /tmp/resolv.conf_old - || true)
+    {# unless as in "unless this check succeeds run..." #}
+    - unless: cat /etc/resolvconf/resolv.conf.d/head /etc/resolvconf/resolv.conf.d/base /etc/resolvconf/resolv.conf.d/tail | diff -u /tmp/resolv.conf -
     - require:
       - file: /etc/resolvconf/resolv.conf.d
       - file: /etc/resolvconf/resolv.conf.d/base
