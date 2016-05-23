@@ -115,7 +115,7 @@ def iface_settings(iface, set_gw = True):
                     # default to 1st IP of network as GW
                     subnet = settings['network'].split('/')[0]
                     subnet_int = quaddot2int(subnet)
-                    gateway = int2quaddot(subnet_int + 1)
+                    gateway = int2quaddot(int(subnet_int) + 1)
                     if gateway == iface_pillar['ipv4']:
                         raise ValueError, "Can't set the default route " + \
                             "to the same IP as configured on this interface"
