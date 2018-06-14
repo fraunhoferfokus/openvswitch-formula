@@ -8,6 +8,29 @@
     - user: root
     - mode: 0644
     - template: jinja
+{% if grains['os'] == 'Ubuntu' and ( 
+    grains['osmajorrelease'] | int > 17 or 
+    grains['oscodename'] == 'arful' ) %}
+# Ubuntu since 17.10 "artful" uses systemd's `resolved`
+# so we need to make sure it's configured, too:
+/etc/systemd/resolvd.conf:
+  file.managed:
+    - contents: |
+        # !! MANAGED VIA SALTSTACK !!
+        # See resolved.conf(5) for details
+        [Resolve]
+        DNS={{ salt['pillar.get']('dns:servers')|join(' ') }}
+        #FallbackDNS=
+        Domains={{ salt['pillar.get']('dns:domains')|join(' ') }}
+        #LLMNR=no
+        #MulticastDNS=no
+        #DNSSEC=no
+        #Cache=yes
+        #DNSStubListener=yes
+    - user: root
+    - mode: 644
+{% endif %}
+
 {% else %}
   {% if salt['pkg.version']('resolvconf') %}
 resolvconf:
