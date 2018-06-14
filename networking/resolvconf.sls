@@ -8,12 +8,14 @@
     - user: root
     - mode: 0644
     - template: jinja
+{% endif %}
+
 {% if grains['os'] == 'Ubuntu' and ( 
     grains['osmajorrelease'] | int > 17 or 
     grains['oscodename'] == 'arful' ) %}
 # Ubuntu since 17.10 "artful" uses systemd's `resolved`
 # so we need to make sure it's configured, too:
-/etc/systemd/resolvd.conf:
+/etc/systemd/resolved.conf:
   file.managed:
     - contents: |
         # !! MANAGED VIA SALTSTACK !!
@@ -26,20 +28,19 @@
         #MulticastDNS=no
         #DNSSEC=no
         #Cache=yes
-        #DNSStubListener=yes
+        DNSStubListener=no
     - user: root
     - mode: 644
 {% endif %}
 
-{% else %}
-  {% if salt['pkg.version']('resolvconf') %}
+{% if salt['pkg.version']('resolvconf') %}
 resolvconf:
   service.running:
     - require:
       - file: /etc/resolvconf/resolv.conf.d
     - watch:  
       - file: /etc/resolvconf/resolv.conf.d
-  {% endif %}
+{% endif %}
 
   {# Prepare the configfiles for resolvconf #}
   {# even if currently not installed: #}
@@ -70,7 +71,7 @@ resolvconf:
       - file: /etc/resolvconf/resolv.conf.d/head
       - file: /etc/resolvconf/resolv.conf.d/tail
 
-  {% for file in ['head','base','tail'] %}
+{% for file in ['head','base','tail'] %}
   {# These use 'servers', 'options' and 'domains' under pillar['dns']: #}
   {# (And the first one defaults to ['8.8.8.8'] #}
   {#  if pillar['dns:servers'] is empty) #}
@@ -83,5 +84,4 @@ resolvconf:
     - template: jinja
     - require:
       - file: /etc/resolvconf/resolv.conf.d
-  {% endfor%}
-{% endif %}
+{% endfor%}
