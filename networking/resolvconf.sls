@@ -10,8 +10,13 @@
     - template: jinja
 {% endif %}
 
+{% if not 'osmajorrelease' in grains %}
+  {% set osmajorrelease = grains['osrelease_info'][0] %}
+{% else %}
+  {% set osmajorrelease = grains['osmajorrelease'] %}
+{% endif %}
 {% if grains['os'] == 'Ubuntu' and ( 
-    grains['osmajorrelease'] | int > 17 or 
+    osmajorrelease | int > 17 or 
     grains['oscodename'] == 'arful' ) %}
 # Ubuntu since 17.10 "artful" uses systemd's `resolved`
 # so we need to make sure it's configured, too:
