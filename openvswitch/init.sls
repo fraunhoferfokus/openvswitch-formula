@@ -64,10 +64,10 @@ def run():
                     }
                ]
         }
-        if config.has_key('clean') and config.clean:
+        if 'clean' in config and config.clean:
             state[br_state]['ovs_bridge.managed'].append({'clean': True})
         
-        if br_pillar[bridge].has_key('ports'):
+        if 'ports' in br_pillar[bridge]:
             state[br_state]['ovs_bridge.managed'].append(
                 {'ports': 
                     br_pillar[bridge]['ports']
@@ -80,7 +80,7 @@ def run():
             #- require:
             #   - network: uplink_iface 
             #   - module: ovs_bridge
-            if netcfg.has_key('ipv4'):
+            if 'ipv4' in netcfg:
                 state[br_state]['cmd.run'] = [
                     {'name': ('ip addr show {1} | grep {0} || ' +\
                              'ip addr add {0} dev {1}').format(
@@ -90,7 +90,7 @@ def run():
                         ]
                     },
                 ]
-                if netcfg.has_key('default_gw') and netcfg.has_key('primary'):
+                if 'default_gw' in netcfg and 'primary' in netcfg:
                     if netcfg['primary']:
                         gw_state = 'set gateway on {0}'.format(bridge)
                         state[gw_state] = {}
@@ -106,8 +106,8 @@ def run():
                                     ]
                                 }
                             ]
-                if interfaces.has_key(uplink_iface) and \
-                    interfaces[uplink_iface].has_key('inet'):
+                if uplink_iface in interfaces and \
+                    'inet' in interfaces[uplink_iface]:
                     if netcfg['ipv4'].split('/')[0] == \
                         interfaces[uplink_iface]['inet'][0]['address']:
                         state['strip netcfg from {0}'.format(uplink_iface)] = \

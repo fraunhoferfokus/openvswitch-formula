@@ -45,7 +45,7 @@ network-manager:
     via NetworkManager
     No RedHat-version of the file yet and th pkgname probably 
     is different on RH, too #}
-{% if salt['pkg.list_pkgs']().has_key('network-manager') %}
+{% if 'network-manager' in salt['pkg.list_pkgs']() %}
 /etc/NetworkManager/NetworkManager.conf:
   file.managed:
     - source: salt://networking/files/NetworkManager.conf_{{

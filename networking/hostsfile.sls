@@ -15,8 +15,8 @@ def run():
        iface, settings = interfaces.items()[0] 
     elif len(interfaces.keys()) > 1:
        for iface, settings in interfaces.items():
-            if settings.has_key('default_gw') or \
-                    settings.has_key('primary'):
+            if 'default_gw' in settings or \
+                    'primary' in settings:
                 break
             # We just wanted this list to be filtered.
             # networking.config would break anyway if 
@@ -24,13 +24,13 @@ def run():
             # The 'primary' key is a legacy thing.
 
     ips = [] 
-    if settings.has_key('ipv4'):
+    if 'ipv4' in settings:
         ipv4 = settings['ipv4'].split('/')[0] 
         ips += [ipv4]
         if ipv4 == 'dhcp':
             dhcp = True
     
-    if settings.has_key('ipv6'):
+    if 'ipv6' in settings:
         ipv6 = settings['ipv6'].split('/')[0] 
         ips += [ipv6]
 
@@ -65,7 +65,7 @@ def run():
         }
     
     for host_id, details in salt['pillar.get']('hosts', {}).items():
-        if not details.has_key('names'):
+        if not 'names' in details:
             names = host_id
         else:
             names = details['names'] 

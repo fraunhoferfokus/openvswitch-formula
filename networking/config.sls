@@ -5,7 +5,7 @@ to check which bridges already exist before passing network
 configuration data to the template for /etc/network/interfaces.
 """
 # This one is handy to keep around for printf-debugging:
-#raise Exception, \
+#raise Exception(\
 #    "Interfaces w/ Default Gateway:" + str(ifs_w_gw) +\
 #    "\nDHCP Interfaces:" + str(ifs_dhcp) +\
 #    "\nInterfaces NOT settings the Def GW:" + str(ifs_dhcp) +\
@@ -83,8 +83,8 @@ def cidr2network_options(cidr):
     try:
         netmask = prefixlen2netmask(cidr.split('/')[1])
     except IndexError:
-        raise ValueError, "IPv4 address needs to be in" \
-            + " CIDR format, i.e. 192.0.2.17/24"
+        raise ValueError("IPv4 address needs to be in" \
+            + " CIDR format, i.e. 192.0.2.17/24")
     options['ipv4'] = cidr
     options['netmask'] = netmask
     options['network'] = netutils.get_net_start(
@@ -97,7 +97,7 @@ def iface_settings(iface, set_gw = True):
     iface_pillar = salt['pillar.get'](
         'interfaces:{0}'.format(iface))
     settings = {}
-    if iface_pillar.has_key('ipv4'):
+    if 'ipv4' in iface_pillar:
         # don't do anything in this case so the
         # configuration will be set to DHCP
         if iface_pillar['ipv4'] == 'dhcp':
@@ -108,7 +108,7 @@ def iface_settings(iface, set_gw = True):
             settings = cidr2network_options(iface_pillar['ipv4'])
             if set_gw:
                 # if no 'default_gw' or default_gw is a True bool:
-                if not iface_pillar.has_key('default_gw') or (\
+                if not 'default_gw' in iface_pillar or (\
                         isinstance(iface_pillar['default_gw'], bool) \
                         and iface_pillar['default_gw']
                     ):
@@ -117,11 +117,11 @@ def iface_settings(iface, set_gw = True):
                     subnet_int = quaddot2int(subnet)
                     gateway = int2quaddot(int(subnet_int) + 1)
                     if gateway == iface_pillar['ipv4']:
-                        raise ValueError, "Can't set the default route " + \
-                            "to the same IP as configured on this interface"
+                        raise ValueError("Can't set the default route " + \
+                            "to the same IP as configured on this interface")
                     settings['default_gw'] = gateway
                 # if 'default_gw' is False bool:
-                elif iface_pillar.has_key('default_gw') and \
+                elif 'default_gw' in iface_pillar and \
                         not iface_pillar['default_gw']:
                     pass
                 # if 'default_gw' is not a bool use its value:
@@ -130,14 +130,14 @@ def iface_settings(iface, set_gw = True):
                         try:
                             quaddot2int(iface_pillar['default_gw'])
                         except ValueError:
-                            raise SaltInvocationError, "need QuadDot or Bool"
+                            raise SaltInvocationError("need QuadDot or Bool")
                     settings['default_gw'] = iface_pillar['default_gw']
-            if settings.has_key('default_gw'):
+            if 'default_gw' in settings:
                 gateway_int = quaddot2int(settings['default_gw'])
                 subnet_int = quaddot2int(settings['network'].split('/')[0])
                 brdcast_int = quaddot2int(settings['broadcast'])
                 if gateway_int < subnet_int or gateway_int > brdcast_int:
-                    raise SaltInvocationError, ("Default gateway {0} " + \
+                    raise SaltInvocationError("Default gateway {0} " + \
                         "is not in subnet {1} as configured on " + \
                         "interface {2}.").format( 
                             str(settings['default_gw']), 
@@ -145,17 +145,17 @@ def iface_settings(iface, set_gw = True):
                             iface)
     for cmd_type in ['pre-up', 'up', 'post-up',
                 'down', 'pre-down', 'post-down']:
-        if iface_pillar.has_key(cmd_type):
+        if cmd_type in iface_pillar:
             settings[cmd_type] = iface_pillar[cmd_type]
 
-    if iface_pillar.has_key('ipv6'):
+    if 'ipv6' in iface_pillar:
         settings['ipv6'] = iface_pillar['ipv6']
-        if iface_pillar.has_key('privext'):
+        if 'privext' in iface_pillar:
             settings['privext'] = iface_pillar['privext']
-        if iface_pillar.has_key('scope'):
+        if 'scope' in iface_pillar:
             settings['scope'] = iface_pillar['scope']
                     
-    if iface_pillar.has_key('comment'):
+    if 'comment' in iface_pillar:
         settings['comment'] = iface_pillar['comment']
 
     return settings
@@ -182,9 +182,9 @@ def run():
     ifs_w_gw = {}
     ifs_not_gw = []
     for iface, settings in salt['pillar.get']('interfaces').items():
-        if settings.has_key('ipv4') and settings['ipv4'] == 'dhcp':
+        if 'ipv4' in settings and settings['ipv4'] == 'dhcp':
             ifs_dhcp += [iface]
-        if settings.has_key('default_gw'):
+        if 'default_gw' in settings:
             if settings['default_gw']:
                 ifs_w_gw[iface] = settings['default_gw']
             # Would cause a SaltInvocationError later:
@@ -200,23 +200,23 @@ def run():
     if len(ifs_dhcp) > 1:
         # Would need a mechanism to keep the DHCP-client 
         # from setting the default route.
-        raise SaltInvocationError, "More than one interface to " + \
-            "configure for DHCP: {0}".format(ifs_dhcp)
+        raise SaltInvocationError("More than one interface to " + \
+            "configure for DHCP: {0}".format(ifs_dhcp))
      
     # Works:
     if len(ifs_w_gw.keys()) > 1:
-        raise SaltInvocationError, "More than one interface to " + \
-            "configure for default gateways: {0}".format(ifs_w_gw)
+        raise SaltInvocationError("More than one interface to " + \
+            "configure for default gateways: {0}".format(ifs_w_gw))
 
     # Check if default_gw is set on a DHCP-Interface:
     for iface in pillar_interfaces.keys():
         if iface in ifs_w_gw and iface in ifs_dhcp:
-            raise SaltInvocationError, "Can't both set the gateway "\
+            raise SaltInvocationError("Can't both set the gateway "\
                 + "and configure via DHCP for interface " + \
-                "{0}.".format(iface)
+                "{0}.".format(iface))
         if iface in ifs_dhcp and iface in ifs_not_gw:
-            raise NotImplementedError, "Keeping the DHCP-client " + \
-                "from settings the default gateway is not implemented" 
+            raise NotImplementedError("Keeping the DHCP-client " + \
+                "from settings the default gateway is not implemented")
 
     # Make sure we don't try to set the gw on any other 
     # device when one will be configured via DHCP:
@@ -224,13 +224,13 @@ def run():
         for iface in pillar_interfaces.keys():
             if iface != ifs_dhcp[0]:
                 ifs_not_gw.append(iface)
-        #raise Exception, "One DHCP-interface found: " + ifs_dhcp[0] + \
+        #raise Exception("One DHCP-interface found: " + ifs_dhcp[0] + \
         #    "\nThe following interfaces are listed in ifs_not_gw: " + \
         #    "\n" + str(ifs_not_gw)
 
     if len(ifs_dhcp) and len(ifs_w_gw.keys()):
-        raise SaltInvocationError, "Can't use DHCP on one iface " + \
-            "and set a default gateway on another iface."
+        raise SaltInvocationError("Can't use DHCP on one iface " + \
+            "and set a default gateway on another iface.")
 
     # If there's no DHCP-iface and none has set a gw check if 
     # there's one that doesn't have default_gw set to False:
@@ -240,8 +240,8 @@ def run():
             if iface not in ifs_not_gw:
                 leftovers.append(iface)
         if len(leftovers) != 1:
-            raise SaltInvocationError, "No interface chosen to " + \
-                "set the default route on."
+            raise SaltInvocationError("No interface chosen to " + \
+                "set the default route on.")
         else:
             ifs_w_gw[leftovers[0]] = True
 
@@ -259,17 +259,18 @@ def run():
         interfaces = {}
         br_pillar = salt['pillar.get']('openvswitch:bridges', {})
         for bridge, br_config in br_pillar.items():
-            if not br_config.has_key('reuse_netcfg'):
+            if not 'reuse_netcfg' in br_config:
                 continue
             uplink = br_config['reuse_netcfg']
             if uplink not in salt['network.interfaces']().keys():
-                raise SaltInvocationError, \
+                raise SaltInvocationError(
                     """
                     Iface {0} set in bridge {1}'s option 
                     'reuse_netcfg' doesn't exist.
                     All interfaces:\n{2}
                     """.format(uplink, bridge, 
                         salt['network.interfaces']().keys())
+                    )
             if salt['ovs_bridge.exists'](bridge):
                 if uplink not in ifs_w_gw.keys() \
                         and uplink not in ifs_dhcp:
@@ -278,10 +279,10 @@ def run():
                 else:
                     interfaces[bridge] = iface_settings(
                         uplink)
-                if interfaces[bridge].has_key('comment'):
+                if 'comment' in interfaces[bridge]:
                     interfaces[bridge]['uplink_comment'] = \
                         interfaces[bridge]['comment']
-                if br_config.has_key('comment'):
+                if 'comment' in br_config:
                     interfaces[bridge]['comment'] = \
                         br_config['comment']
                 else:
@@ -291,13 +292,13 @@ def run():
                         pass
                 interfaces[bridge]['uplink'] = uplink
         #  # TODO: IPv6 config
-        #   if settings.has_key('ipv6'):
+        #   if 'ipv6' in settings:
         #     interfaces[bridge]['ipv6'] = salt['pillar.get'](
         #         'interfaces:{0}:ipv6'.format(iface))
         # get a list of all interfaces used as uplinks...:
         uplink_list = []
         for br_conf in interfaces.values():
-            if br_conf.has_key('uplink'):
+            if 'uplink' in br_conf:
                 uplink_list += [ br_conf['uplink'] ]
         # ...and interfaces not in this list will be passed
         # to the template for /etc/network/interfaces:
@@ -310,7 +311,7 @@ def run():
                     interfaces[iface] = iface_settings(iface)
                 #comment = \
                 #    "Bridge {0} doesn't exist yet\n".format(bridge)
-                if settings.has_key('comment'):
+                if 'comment' in settings:
                     #comment += settings['comment']
                     interfaces[iface]['comment'] = \
                         settings['comment']

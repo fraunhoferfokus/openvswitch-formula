@@ -14,7 +14,7 @@ auto lo
 iface lo inet loopback
 
 {%- for dev, settings in interfaces.items() -%}
-  {% if settings.has_key('comment') -%}
+  {% if 'comment' in settings -%}
      {%- for line in settings['comment'].splitlines() %}
 # {{ line }}
      {%- endfor %}
@@ -30,7 +30,7 @@ auto {{ dev }}
   {%- else -%}
     {%- set vlan = False -%}
   {%- endif -%}
-  {%- if settings.has_key('ipv4') %}
+  {%- if 'ipv4' in settings %}
     {%- if settings['ipv4'] == 'dhcp' %}
 iface {{ dev }} inet dhcp
     {%- elif settings['ipv4'] == 'manual' %}
@@ -43,7 +43,7 @@ iface {{ dev }} inet static
     address   {{ settings['ipv4'].split('/')[0] }}
     network   {{ settings['network'].split('/')[0] }}
     netmask   {{ settings['netmask'] }}
-      {%- if settings.has_key('default_gw') %}
+      {%- if 'default_gw' in settings %}
     gateway   {{ settings['default_gw'] }}
       {%- endif %}
     broadcast {{ settings['broadcast'] }}
@@ -51,7 +51,7 @@ iface {{ dev }} inet static
     {%- if settings['ipv4'] != 'dhcp' %}
       {%- for cmd_type in ['pre-up', 'up', 'post-up', 
                 'down', 'pre-down', 'post-down'] %}
-        {%- if settings.has_key(cmd_type) %}
+        {%- if cmd_type in settings %}
           {%- if settings[cmd_type] is string %}
     {{ cmd_type }} {{ settings[cmd_type] }}
           {%- elif settings[cmd_type] is iterable %}
@@ -66,19 +66,19 @@ iface {{ dev }} inet static
       {%- endfor %}
     {%- endif %}
   {%- endif %}
-  {% if settings.has_key('ipv6') %}
+  {% if 'ipv6' in settings %}
 iface {{ dev }} inet6 static
   {%- set addr, prefix = settings['ipv6'].split('/') %}
     address   {{ addr }}
     netmask   {{ prefix }}
-    {%- if settings.has_key('privext') %}
+    {%- if 'privext' in settings %}
     privext   {{ settings['privext'] }}
     {%- endif %}
-    {%- if settings.has_key('scope') %}
+    {%- if 'scope' in settings %}
     scope     {{ settings['scope'] }}
     {% endif %} 
   {% endif %}
-  {%- if settings.has_key('uplink') %}
+  {%- if 'uplink' in settings %}
 # uplink for {{ dev }}
 auto {{ settings.uplink }}
 iface {{ settings.uplink }} inet manual
