@@ -17,7 +17,7 @@
 {% endif %}
 {% if grains['os'] == 'Ubuntu' and ( 
     osmajorrelease | int > 17 or 
-    grains['oscodename'] == 'arful' ) %}
+    grains['oscodename'] == 'artful' ) %}
 # Ubuntu since 17.10 "artful" uses systemd's `resolved`
 # so we need to make sure it's configured, too:
 /etc/systemd/resolved.conf:
