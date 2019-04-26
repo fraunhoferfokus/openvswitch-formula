@@ -6,8 +6,10 @@ networking:
 {% endif %}
 {#  Won't work together with OVS and generally just messes
     with the network configuration #}
-network-manager:
+
+{# Don't try this on *BSD #}
 {% if grains['os_family'] == 'Debian' %}
+network-manager:
   service:
     - disabled
   {# That's the Upstart way of disabling a service: #}
@@ -19,7 +21,9 @@ network-manager:
     - group: root
     - mode: 0444
   {% endif %}
-{% elif grains['os_family'] == 'RedHat' %}
+{% elif grains['os_family'] == 'RedHat' or
+    ( grains['os'] == 'Ubuntu' and grains['osmajorrelease'] >= 16 ) %}
+network-manager:
   service:
     - dead
     - enable: false
@@ -44,7 +48,8 @@ network-manager:
 {% if salt['pkg.list_pkgs']().has_key('network-manager') %}
 /etc/NetworkManager/NetworkManager.conf:
   file.managed:
-    - source: salt://networking/NetworkManager.conf_{{grains['os_family']}}
+    - source: salt://networking/files/NetworkManager.conf_{{
+        grains['os_family'] }}
     - user: root
     - group: root
     - mode: 0444
